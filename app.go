@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/lib/pq"
 	_ "github.com/lib/pq"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -38,16 +39,39 @@ func (a *App) Initialize(user, password, dbname string) {
 	}
 
 	resetTable(a.DB)
-
-	promotions := readFromCSV()
+	f, _ := os.Open("promotions.csv")
+	promotions := basicRead(f)
 
 	// both functions take about the same time ~2secs
-	bulkImport(promotions, a.DB)
-	//unnestInsert(promotions, a.DB)
+	//bulkImport(promotions, a.DB)
+	unnestInsert(promotions, a.DB)
 
 	a.Router = mux.NewRouter()
 
 	a.initializeRoutes()
+}
+
+func basicRead(f *os.File) []Promotion {
+	fcsv := csv.NewReader(f)
+
+	var promotions []Promotion
+
+	for {
+		rStr, err := fcsv.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			fmt.Println("ERROR: ", err.Error())
+			break
+		}
+		price, _ := strconv.ParseFloat(rStr[1], 64)
+		p := Promotion{
+			rStr[0], price, rStr[2],
+		}
+		promotions = append(promotions, p)
+	}
+	return promotions
 }
 
 func resetTable(db *sql.DB) {
@@ -65,7 +89,7 @@ func resetTable(db *sql.DB) {
 	log.Println("Done import")*/
 }
 
-func readFromCSV() []Promotion {
+func basicReadAll() []Promotion {
 	filePath := "promotions.csv"
 	open, err2 := os.Open(filePath)
 	f, err := open, err2
@@ -143,10 +167,10 @@ func unnestInsert(unsavedRows []Promotion, db *sql.DB) {
 	if _, err := db.Exec(query, pq.Array(ids), pq.Array(prices), pq.Array(expirationDates)); err != nil {
 		fmt.Println(err)
 	}
-	err := db.Close()
-	if err != nil {
-		log.Fatal(err)
-	}
+	//err := db.Close()
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
 }
 
 func executeQuery(db *sql.DB, createTableQueryPath string) {
@@ -159,7 +183,7 @@ func executeQuery(db *sql.DB, createTableQueryPath string) {
 	query := string(c)
 	_, err := db.Exec(query)
 	if err != nil {
-		log.Fatal("failed to initialize the DB")
+		log.Fatalf("failed to initialize the DB: %s", err)
 	}
 }
 
@@ -246,13 +270,17 @@ func (a *App) getPromotions(w http.ResponseWriter, _ *http.Request) {
 	respondWithJSON(w, http.StatusOK, promotions)
 }
 
+func (a *App) helloWorld(writer http.ResponseWriter, request *http.Request) {
+	respondWithError(writer, http.StatusOK, "Hello World")
+}
+
 func (a *App) initializeRoutes() {
-	a.Router.HandleFunc("/", a.getPromotion).Methods("GET")
+	a.Router.HandleFunc("/", a.helloWorld).Methods("GET")
 	a.Router.HandleFunc("/promotions", a.getPromotions).Methods("GET")
-	a.Router.HandleFunc("/promotionModel", a.createPromotion).Methods("POST")
-	a.Router.HandleFunc("/promotionModel/{id}", a.getPromotion).Methods("GET")
-	a.Router.HandleFunc("/promotionModel/{id}", a.updatePromotion).Methods("PUT")
-	a.Router.HandleFunc("/promotionModel/{id}", a.deletePromotion).Methods("DELETE")
+	a.Router.HandleFunc("/promotions", a.createPromotion).Methods("POST")
+	a.Router.HandleFunc("/promotions/{id}", a.getPromotion).Methods("GET")
+	a.Router.HandleFunc("/promotions/{id}", a.updatePromotion).Methods("PUT")
+	a.Router.HandleFunc("/promotions/{id}", a.deletePromotion).Methods("DELETE")
 }
 
 func respondWithError(w http.ResponseWriter, code int, message string) {
