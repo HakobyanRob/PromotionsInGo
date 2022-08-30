@@ -1,21 +1,21 @@
 
 # Promotions In Go
 
-**Instruction to run**
+**Instruction to run**\
 Provided file should be named "promotions.csv" and be located in the same diretory as 'app.go'.
 PostgreSQL should be installed, to which the system connects with "postgres" username and "123" password. The db name is "postgres".
 
-**DB Indexing**
+**DB Indexing**\
 Decided to go with the BTree indexing, even though BRIN also looked promising.
 But BRIN works best with sorted tables, and I am not sure if sorting a billion entries is worth it?
 
-**Reading the CSV file**
+**Reading the CSV file**\
 Tried multiple approaches for reading the csv file
 1. Reading the whole file, then parsing it into list of objects, the issue with this solution was that if the file is too large the process memory will be filled up.
 2. Reading the file line by line (which worked the best for the provided file containing 200.000 entries) and then parsing & appending each line to the list of objects.
 3. Reading a file with consumer/producer model, but this solution didn't have any visible advantage over the second solution. Maybe for bigger files the advantage will become more obvious so leaving it in draft.
 
-**Insertion**
+**Insertion**\
 Used Unnest method to Insert data into DB, though considered CopyIn also:
 
 1. Unnest: which allows to insert more than 65k+ queries at a time
@@ -24,7 +24,7 @@ headers
 
 Both methods execute in about the same time.
 
-**Available Methods**
+**Available Methods**\
 Created the following method according to the task.
 |  |  |
 |--|--|
@@ -42,7 +42,7 @@ Added extra methods for internal testing.
 
 **Load Testing**
 
-The testing was done using [Vegeta](https://github.com/tsenart/vegeta).
+The testing was done using [Vegeta](https://github.com/tsenart/vegeta).\
 Calling the server for 5s with a rate of 600. The result are the following
 
     Requests      [total, rate, throughput]         5000, 1000.21, 1000.19
