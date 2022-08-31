@@ -76,3 +76,5 @@ Calling the server for 10s with a rate of 3000. The result are the following
     Status Codes  [code:count]                      200:28971  500:1029
     Error Set:
     500 Internal Server Error{"error":"dial tcp [::1]:5432: connectex: No connection could be made because the target machine actively refused it."}
+
+My personal computer was unable to handle more requests and the port became unrensponsive.
